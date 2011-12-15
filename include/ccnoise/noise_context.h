@@ -39,13 +39,16 @@ namespace ccnoise
 	noise<NoiseT, T>::noise(unsigned int tsize) :
 		tablesize(tsize)
 	{
+		std::cout << "Constructing Noise Template." << std::endl;
+		init_permutation_table();
+		init_data_table();
 
 	}
 	
 	//************************************************************************************************
 	
 	template<typename NoiseT, typename T>
-	void noise<NoiseT, T>::init_permutation_table() :
+	void noise<NoiseT, T>::init_permutation_table() 
 	{
 		permtable.resize(tablesize);
 
@@ -69,7 +72,7 @@ namespace ccnoise
 	//************************************************************************************************
 	
 	template<typename NoiseT, typename T>
-	void noise<NoiseT, T>::init_data_table() :
+	void noise<NoiseT, T>::init_data_table() 
 	{
 		datatable.resize(tablesize);
 
