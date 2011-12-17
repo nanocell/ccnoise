@@ -14,39 +14,38 @@ namespace ccmath
 
 	//For a derivation of Catmull Rom splines and basis matrix, refer to "Catmull Rom splines", Christopher Twigg, 2003.
 	
-	//This spline function was based on the spline implementation presented in Texturing & Modeling: A Procedural Approach, 3rd Edition.
 
-
-	struct tau_value
-	{
-		typedef float type;
-		static const float value = 0.5f;
-	};
-
-	template<typename T, typename tau>
-	struct spline_data
+	template<typename T, bool transpose>
+	struct spline_basis
 	{
 		//Coefficients for basis matrix
-		static Imath::Matrix44<T> basis_coeff;
-
+		static const Imath::Matrix44<T> coeff;
+		static const Imath::Matrix44<T> coeff_transposed;
 	};
 
 	/****************************************************************************************************/
 	
-	template<typename T, typename tau>
-	Imath::Matrix44<T> spline_data<T, tau>::basis_coeff(
+	template<typename T, bool transpose>
+	const Imath::Matrix44<T> spline_basis<T, transpose>::coeff(
 			0.0, 1.0, 0.0, 0.0,
-			-0.5, 0.0, 0.5, 0.0,
-			1.0, -2.5, 2.0, -0.5, 
-			-0.5, 1.5, -1.5, 0.5 
+			-0.5,0.0, 0.5, 0.0,
+			1.0,-2.5, 2.0,-0.5,
+			-0.5,1.5,-1.5, 0.5
+			);
+
+	template<typename T, bool transpose>
+	const Imath::Matrix44<T> spline_basis<T, transpose>::coeff_transposed(
+			0.0,-0.5, 1.0,-0.5,
+			1.0, 0.0,-2.5, 1.5,
+			0.0, 0.5, 2.0,-1.5,
+			0.0, 0.0,-0.5, 0.5
 			);
 
 	/****************************************************************************************************/
 
+	//This spline function is based on the spline implementation presented in Texturing & Modeling: A Procedural Approach, 3rd Edition.
+
 	template<typename T>
-	//typename T::value_type spline(typename T::value_type x, typename boost::call_traits<T>::param_type knots)
-	//float spline(float x, typename boost::call_traits<T>::const_reference knots)
-	
 	typename T::value_type spline(typename T::value_type x, T const& knots)
 	{
 		typedef typename T::value_type value_type;
@@ -60,14 +59,12 @@ namespace ccmath
 
 		if (numKnots < 4) // illegal
 		{
-			std::cerr << "Spline has too few knots. " << std::endl;
+			std::cerr << "Spline doesn't have enough knots. " << std::endl;
 			return 0;
 		}
 
-		//std::cout << "nspans: " << nspans << std::endl;
 		//Find the appropriate 4-point span of the spline
 		v = clamp(x, 0.f, 1.f) * nspans;
-		//std::cout << "v: " << v << std::endl;
 		
 		span = static_cast<size_t>( floor(v) );
 
@@ -75,25 +72,18 @@ namespace ccmath
 			span = numKnots - 3;
 		v -= span;
 
-		//std::cout << "span: " << span << std::endl;
-		//std::cout << "numKnots: " << numKnots << std::endl;
-
-		//knotIt += span; // advance the iterator to the correct place
+		knotIt += span; // advance the iterator to the correct place
 		value_type k0 = *knotIt; ++knotIt;
 		value_type k1 = *knotIt; ++knotIt;
 		value_type k2 = *knotIt; ++knotIt;
 		value_type k3 = *knotIt; 
 
-
 		Imath::Vec4<value_type> k(k0, k1, k2, k3);
 		//Calculate the coefficients of the cubic polynomial
-		Imath::Vec4<value_type> r = k * spline_data<value_type, tau_value>::basis_coeff.transpose();
+		Imath::Vec4<value_type> r = k * spline_basis<value_type, true>::coeff_transposed;
 
-		//std::cout << "k: " << k << std::endl;
-		//std::cout << "r: " << r << std::endl;
-		
 		//Evaluate the cubic polynomial.
-		return r[0] + x*(r[1] + x*(r[2] + x*r[3])); 
+		return r[0] + v*(r[1] + v*(r[2] + v*r[3])); 
 	}
 
 };

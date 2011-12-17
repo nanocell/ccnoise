@@ -39,8 +39,8 @@ int main(int argc, char* argv[])
 	std::vector<float> xknots;
 	xknots.push_back(0.1f);
 	xknots.push_back(0.9f);
-	xknots.push_back(0.9f);
-	xknots.push_back(0.1f);
+	xknots.push_back(0.5f);
+	xknots.push_back(0.3f);
 	//xknots.push_back(0.9f);
 
 
@@ -50,26 +50,22 @@ int main(int argc, char* argv[])
 
 	//std::cout << "is same: " << boost::is_same< std::vector<float> const&, vec_ref >::value << std::endl;
 
-	float fstart = 0.01f;
-	float fend = 0.99f;
-	float finc = 0.001;
+	float fstart = 0.f;
+	float fend = 1.f;
+	float finc = 0.1;
 	float sample;
 	
 	std::cout << "x = [";
-	for (sample = fstart; sample < fend; sample += finc)
+	for (sample = fstart; sample < fend+finc; sample += finc)
 	{
-		//std::cout << "spline sample: " << sample << " => " << ccmath::spline(sample, xknots) << std::endl;
-		//d::cout << ccmath::spline(sample, xknots) << std::endl;
 		std::cout << sample << " ";
 	}
 	
 	std::cout << "];" << std::endl;
 
 	std::cout << "y = [";
-	for (sample = fstart; sample < fend; sample += finc)
+	for (sample = fstart; sample < fend+finc; sample += finc)
 	{
-		//std::cout << "spline sample: " << sample << " => " << ccmath::spline(sample, xknots) << std::endl;
-		//std::cout << sample << " - " << ccmath::spline(sample, xknots) << " " << std::endl;;
 		std::cout << ccmath::spline(sample, xknots) << " ";
 	}
 	
