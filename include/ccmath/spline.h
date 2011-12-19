@@ -45,13 +45,17 @@ namespace ccmath
 
 	//This spline function is based on the spline implementation presented in Texturing & Modeling: A Procedural Approach, 3rd Edition.
 
-	template<typename T>
-	typename T::value_type spline(typename T::value_type x, T const& knots)
-	{
-		typedef typename T::value_type value_type;
+	//TODO: Add multidimensional interpolation support.
 
-		typename T::const_iterator knotIt = knots.begin();
-		value_type v;
+	template<typename sampleT, typename knotT>
+	const sampleT spline(sampleT const& x, knotT const& knots)
+	{
+		//TODO: Add static assert:
+		// assert( type_traits<sampleT>::type == type_traits<knotT>::value_type )
+		typedef typename knotT::value_type knot_value_t;
+
+		typename knotT::const_iterator knotIt = knots.begin();
+		sampleT v;
 
 		size_t span;
 		size_t numKnots = knots.size();
@@ -73,14 +77,14 @@ namespace ccmath
 		v -= span;
 
 		knotIt += span; // advance the iterator to the correct place
-		value_type k0 = *knotIt; ++knotIt;
-		value_type k1 = *knotIt; ++knotIt;
-		value_type k2 = *knotIt; ++knotIt;
-		value_type k3 = *knotIt; 
+		knot_value_t k0 = *knotIt; ++knotIt;
+		knot_value_t k1 = *knotIt; ++knotIt;
+		knot_value_t k2 = *knotIt; ++knotIt;
+		knot_value_t k3 = *knotIt; 
 
-		Imath::Vec4<value_type> k(k0, k1, k2, k3);
+		Imath::Vec4<knot_value_t> k(k0, k1, k2, k3);
 		//Calculate the coefficients of the cubic polynomial
-		Imath::Vec4<value_type> r = k * spline_basis<value_type, true>::coeff_transposed;
+		Imath::Vec4<knot_value_t> r = k * spline_basis<knot_value_t, true>::coeff_transposed;
 
 		//Evaluate the cubic polynomial.
 		return r[0] + v*(r[1] + v*(r[2] + v*r[3])); 
