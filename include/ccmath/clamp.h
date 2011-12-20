@@ -4,8 +4,7 @@
 
 #include <boost/type_traits.hpp>
 
-#include <ccmath/container_size.h>
-#include <ccmath/imath_container_size.h>
+#include <ccmath/container_adaptor.h>
 
 #include <iostream>
 

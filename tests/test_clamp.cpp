@@ -8,10 +8,36 @@
 #include <cppunit/CompilerOutputter.h>
 
 #include <OpenEXR/ImathVec.h>
+#include <ccmath/imath_container_adaptor.h>
 
 #include <sysexits.h>
 #include <iostream>
 #include <limits>
+
+//Custom vector class for testing purposes
+template<typename T>
+struct MyVector
+{
+	typedef MyVector<T> type;
+	typedef T value_type;
+	typedef unsigned int size_type;
+	
+	static inline size_type size(const Imath::Vec2<T>& container) { return 3; }
+	static inline void resize(Imath::Vec2<T>& container, size_type entries) { }
+
+
+	MyVector() {}
+	MyVector(T x, T y, T z) { _data[0] = x; _data[1] = y; _data[2] = z; }
+
+	T& operator[](unsigned int i) { return _data[i]; }
+	const T& operator[](unsigned int i) const { return _data[i]; }
+
+	bool operator==(const MyVector<T>& rhs) const { return (this->_data[0] == rhs._data[0]) && (this->_data[1] == rhs._data[1]) && (this->_data[0] == rhs._data[0]); } 
+
+	protected:
+		T _data[3];
+};
+
 
 /****************************************************************************************************/
 
@@ -22,8 +48,8 @@ class ClampTest : public CppUnit::TestFixture
 		//Declare each fixture test case
 		CPPUNIT_TEST( test_pod_integer_clamp ); 
 		CPPUNIT_TEST( test_pod_real_clamp ); 
-		//CPPUNIT_TEST( test_container_clamp ); 
 		CPPUNIT_TEST( test_imath_vec_clamp ); 
+		CPPUNIT_TEST( test_custom_vec_clamp ); 
 		//End the suite declaration
 		CPPUNIT_TEST_SUITE_END();
 
@@ -35,6 +61,7 @@ class ClampTest : public CppUnit::TestFixture
 		void test_pod_real_clamp();
 		void test_container_clamp();
 		void test_imath_vec_clamp();
+		void test_custom_vec_clamp();
 
 	private:
 		std::vector<int> _int_input_vector;
@@ -42,6 +69,7 @@ class ClampTest : public CppUnit::TestFixture
 		std::vector<float> _flt_vector;
 
 		Imath::Vec2<int> _imath_vec2_int;
+		MyVector<int> _custom_vec3;
 
 };
 
@@ -60,6 +88,7 @@ void ClampTest::setUp()
 	_int_result_vector[2] = 10;
 
 	_imath_vec2_int.setValue(15, -20);
+	_custom_vec3 = MyVector<int>(-7, 8, 15); //I'm not sure why the type deduction doesn't work automatically
 }
 
 /****************************************************************************************************/
@@ -95,16 +124,16 @@ void ClampTest::test_pod_real_clamp()
 
 /****************************************************************************************************/
 
-void ClampTest::test_container_clamp()
+void ClampTest::test_imath_vec_clamp()
 {
-	//CPPUNIT_ASSERT( ccmath::clamp<3>(_int_input_vector, 1, 10) == _int_result_vector );
+	CPPUNIT_ASSERT( ccmath::clamp<2>(_imath_vec2_int, 1, 10) == Imath::Vec2<int>(10, 1) );
 }
 
 /****************************************************************************************************/
 
-void ClampTest::test_imath_vec_clamp()
+void ClampTest::test_custom_vec_clamp()
 {
-	CPPUNIT_ASSERT( ccmath::clamp<2>(_imath_vec2_int, 1, 10) == Imath::Vec2<int>(10, 1) );
+	CPPUNIT_ASSERT( ccmath::clamp<2>(_custom_vec3, 1, 10) == MyVector<int>(1, 8, 10) );
 }
 
 /****************************************************************************************************/
