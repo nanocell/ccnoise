@@ -2,66 +2,64 @@
 #ifndef __CCMATH_CLAMP_H__
 #define __CCMATH_CLAMP_H__
 
-#include <ccmath/container_size.h>
 #include <boost/type_traits.hpp>
+
+#include <ccmath/container_size.h>
+#include <ccmath/imath_container_size.h>
 
 #include <iostream>
 
 namespace ccmath
 {
-	template<typename T, bool is_pod> struct clamp1;
+	/****************************************************************************************************/
+	
+	template<int dim, typename T> 
+	struct clamp1
+	{
+		static inline const T clamp(const T& x, typename container_adaptor<T>::value_type a, typename container_adaptor<T>::value_type b)
+		{
+			T v;
+
+			//NOTE: The resize is not used here anymore, since we will be expecting statically size types, not dynamic
+			//containers such as std::vector.
+			//container_adaptor<T>::resize( v, container_adaptor<T>::size(x) );
+
+			for (unsigned int i = 0; i < dim; ++i)
+			{
+				v[i] = (x[i] < a ? a : (x[i] > b ? b : x[i]));
+			}
+			return v;
+		}
+	};
+
+	/****************************************************************************************************/
 
 	template<typename T>
-	struct clamp1<T, true>
+	struct clamp1<1, T>
 	{
-		static inline T clamp(T x, T a, T b)
+		static inline const T clamp(const T x, T a, T b)
 		{
 			return (x < a ? a : (x > b ? b : x) );
 		}
 	};
 
-	template<typename T>
-	struct clamp1<T, false>
-	{
-		static inline const T clamp(const T& x, int a, const int b)
-		{
-			typename container_adaptor<T>::size_type i, entries;
-			T result;
-
-			entries = container_adaptor<T>::size(x);
-			//container_adaptor<T>::resize(result, entries);
-			result.resize(entries);
-
-			for (i = 0; i < x.size(); ++i)
-			{
-				result[i] = (x[i] < a ? a : (x[i] > b ? b : x[i]) );
-			}
-
-			return result;
-		}
-	};
-
-	//TODO: this clamp is only applicable for POD types.
-	//      build specialisation for containers (arrays, lists, IMath:Vec*)
 	
 	/****************************************************************************************************/
 
-	template<typename T>
-	inline T clamp(T x, T a, T b)
+	template<int dim, typename T>
+	inline const T clamp(const T& x, typename container_adaptor<T>::value_type a, typename container_adaptor<T>::value_type b)
 	{
-		// min(max(x,a),b)
-		//return (x < a ? a : (x > b ? b : x) );
-		return clamp1<T, boost::is_arithmetic<T>::value>::clamp(x,a,b);
+		return clamp1<dim, T>::clamp(x, a, b);
 	}
 
 	/****************************************************************************************************/
-	
+
+	//Dimensionless clamp defaults to 1 and assumes all the types are the same. 
+	//Typically would be used for PODs.
 	template<typename T>
-	inline T clamp(T x, typename T::value_type a, typename T::value_type b)
+	inline T clamp(T x, T a, T b)
 	{
-		// min(max(x,a),b)
-		//return (x < a ? a : (x > b ? b : x) );
-		return clamp1<T, boost::is_arithmetic<T>::value>::clamp(x,a,b);
+		return clamp1<1,T>::clamp(x, a, b);
 	}
 
 	/****************************************************************************************************/

@@ -11,8 +11,10 @@ namespace ccmath
 		typedef T type;
 		typedef typename T::value_type value_type;
 		typedef typename T::size_type size_type;
+
 		static inline typename T::size_type size(const T& container) { return container.size(); }
-		static inline void resize(const T& container, typename T::size_type entries) { container.resize(entries); }
+
+		static inline void resize(T& container, typename T::size_type entries) { container.resize(entries); }
 	};
 
 };
