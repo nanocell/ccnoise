@@ -3,6 +3,7 @@
 #define __CCMATH_IMATH_CONTAINER_SIZE_H__
 
 #include <ccmath/container_adaptor.h>
+#include <boost/mpl/int.hpp>
 #include <OpenEXR/ImathVec.h>
 
 namespace ccmath
@@ -14,9 +15,9 @@ namespace ccmath
 	{
 		typedef Imath::Vec2<T> type;
 		typedef T value_type;
-		typedef unsigned int size_type;
+
+		typedef boost::mpl::int_<2> size;
 		
-		static const unsigned int size = 2;
 	};
 
 	//Imath::Vec3<T> adaptor
@@ -25,9 +26,8 @@ namespace ccmath
 	{
 		typedef Imath::Vec3<T> type;
 		typedef T value_type;
-		typedef unsigned int size_type;
 
-		static const unsigned int size = 3;
+		typedef boost::mpl::int_<3> size;
 	};
 	
 	//Imath::Vec4<T> adaptor
@@ -36,9 +36,8 @@ namespace ccmath
 	{
 		typedef Imath::Vec4<T> type;
 		typedef T value_type;
-		typedef unsigned int size_type;
 		
-		static const unsigned int size = 4;
+		typedef boost::mpl::int_<4> size;
 	};
 
 };

@@ -3,6 +3,8 @@
 #define __CCMATH_CLAMP_H__
 
 #include <boost/type_traits.hpp>
+#include <boost/call_traits.hpp>
+#include <boost/mpl/if.hpp>
 
 #include <ccmath/container_adaptor.h>
 
@@ -11,7 +13,9 @@
 namespace ccmath
 {
 	/****************************************************************************************************/
-	
+
+
+
 	template<int dim, typename T> 
 	struct clamp1
 	{
@@ -45,20 +49,10 @@ namespace ccmath
 	
 	/****************************************************************************************************/
 
-	template<int dim, typename T>
-	inline const T clamp(const T& x, typename container_adaptor<T>::value_type a, typename container_adaptor<T>::value_type b)
-	{
-		return clamp1<dim, T>::clamp(x, a, b);
-	}
-
-	/****************************************************************************************************/
-
-	//Dimensionless clamp defaults to 1 and assumes all the types are the same. 
-	//Typically would be used for PODs.
 	template<typename T>
-	inline T clamp(T x, T a, T b)
+	T clamp(const T& x, typename container_adaptor<T>::value_type a, typename container_adaptor<T>::value_type b)
 	{
-		return clamp1<1,T>::clamp(x, a, b);
+		return clamp1< container_adaptor<T>::size::value, T>::clamp(x, a, b);
 	}
 
 	/****************************************************************************************************/

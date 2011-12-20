@@ -1,6 +1,9 @@
 
 #include <ccmath/clamp.h>
 #include <ccmath/abs.h>
+
+#include <boost/mpl/int.hpp>
+
 #include <cppunit/TestSuite.h>
 #include <cppunit/TextTestRunner.h>
 #include <cppunit/TestFixture.h>
@@ -14,17 +17,15 @@
 #include <iostream>
 #include <limits>
 
-//Custom vector class for testing purposes
+//Custom 3 dimensional vector class for testing purposes
 template<typename T>
 struct MyVector
 {
 	typedef MyVector<T> type;
 	typedef T value_type;
 	typedef unsigned int size_type;
-	
-	static inline size_type size(const Imath::Vec2<T>& container) { return 3; }
-	static inline void resize(Imath::Vec2<T>& container, size_type entries) { }
 
+	typedef boost::mpl::int_<3> size;	
 
 	MyVector() {}
 	MyVector(T x, T y, T z) { _data[0] = x; _data[1] = y; _data[2] = z; }
@@ -126,14 +127,14 @@ void ClampTest::test_pod_real_clamp()
 
 void ClampTest::test_imath_vec_clamp()
 {
-	CPPUNIT_ASSERT( ccmath::clamp<2>(_imath_vec2_int, 1, 10) == Imath::Vec2<int>(10, 1) );
+	CPPUNIT_ASSERT( ccmath::clamp(_imath_vec2_int, 1, 10) == Imath::Vec2<int>(10, 1) );
 }
 
 /****************************************************************************************************/
 
 void ClampTest::test_custom_vec_clamp()
 {
-	CPPUNIT_ASSERT( ccmath::clamp<2>(_custom_vec3, 1, 10) == MyVector<int>(1, 8, 10) );
+	CPPUNIT_ASSERT( ccmath::clamp(_custom_vec3, 1, 10) == MyVector<int>(1, 8, 10) );
 }
 
 /****************************************************************************************************/
