@@ -14,45 +14,27 @@ namespace ccmath
 {
 	/****************************************************************************************************/
 
-
-
-	template<int dim, typename T> 
-	struct clamp1
+	template<typename T>
+	typename boost::disable_if<boost::is_pod<T>, void>::type clamp(T& x, typename container_adaptor<T>::value_type min, typename container_adaptor<T>::value_type max)
 	{
-		static inline const T clamp(const T& x, typename container_adaptor<T>::value_type a, typename container_adaptor<T>::value_type b)
+		for (typename container_adaptor<T>::size_type i = 0; i < container_adaptor<T>::size::value; ++i)
 		{
-			T v;
-
-			//NOTE: The resize is not used here anymore, since we will be expecting statically size types, not dynamic
-			//containers such as std::vector.
-			//container_adaptor<T>::resize( v, container_adaptor<T>::size(x) );
-
-			for (unsigned int i = 0; i < dim; ++i)
-			{
-				v[i] = (x[i] < a ? a : (x[i] > b ? b : x[i]));
-			}
-			return v;
+			if (x[i]<min)
+				x[i] = min;
+			else if (x[i]>max)
+				x[i] = max;
 		}
-	};
+	}
 
 	/****************************************************************************************************/
 
 	template<typename T>
-	struct clamp1<1, T>
+	typename boost::enable_if<boost::is_pod<T>, void>::type clamp(T& x, const T min, const T max)
 	{
-		static inline const T clamp(const T x, T a, T b)
-		{
-			return (x < a ? a : (x > b ? b : x) );
-		}
-	};
-
-	
-	/****************************************************************************************************/
-
-	template<typename T>
-	T clamp(const T& x, typename container_adaptor<T>::value_type a, typename container_adaptor<T>::value_type b)
-	{
-		return clamp1< container_adaptor<T>::size::value, T>::clamp(x, a, b);
+		if (x<min)
+			x = min;
+		else if (x>max)
+			x = max;
 	}
 
 	/****************************************************************************************************/

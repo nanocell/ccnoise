@@ -68,7 +68,9 @@ namespace ccmath
 		}
 
 		//Find the appropriate 4-point span of the spline
-		v = clamp(x, 0.f, 1.f) * nspans;
+		v = x;
+		clamp(v, 0.f, 1.f);
+		v = v * nspans;
 		
 		span = static_cast<size_t>( floor(v) );
 

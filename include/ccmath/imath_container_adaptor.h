@@ -15,6 +15,7 @@ namespace ccmath
 	{
 		typedef Imath::Vec2<T> type;
 		typedef T value_type;
+		typedef unsigned int size_type;
 
 		typedef boost::mpl::int_<2> size;
 		
@@ -26,6 +27,7 @@ namespace ccmath
 	{
 		typedef Imath::Vec3<T> type;
 		typedef T value_type;
+		typedef unsigned int size_type;
 
 		typedef boost::mpl::int_<3> size;
 	};
@@ -36,6 +38,7 @@ namespace ccmath
 	{
 		typedef Imath::Vec4<T> type;
 		typedef T value_type;
+		typedef unsigned int size_type;
 		
 		typedef boost::mpl::int_<4> size;
 	};

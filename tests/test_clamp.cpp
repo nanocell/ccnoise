@@ -103,46 +103,43 @@ void ClampTest::tearDown()
 
 void ClampTest::test_pod_integer_clamp()
 {
-	CPPUNIT_ASSERT( ccmath::clamp(5, 1, 10) == 5);
-	CPPUNIT_ASSERT( ccmath::clamp(-5, 1, 10) == 1);
-	CPPUNIT_ASSERT( ccmath::clamp(15, 1, 10) == 10);
+	int x;
+	
+	x =   5; ccmath::clamp(x, 1, 10);	CPPUNIT_ASSERT(x == 5);
 
-	CPPUNIT_ASSERT( ccmath::clamp(-50, -10, 10) == -10);
-	CPPUNIT_ASSERT( ccmath::clamp(50, -10, 10) == 10); 
+	x =  -5; ccmath::clamp(x, 1, 10);	CPPUNIT_ASSERT(x == 1);
+	x =  15; ccmath::clamp(x, 1, 10);	CPPUNIT_ASSERT(x == 10);
+
+	x = -50; ccmath::clamp(x, -10, 10);	CPPUNIT_ASSERT(x == -10);
+	x =  50; ccmath::clamp(x, -10, 10);	CPPUNIT_ASSERT(x == 10); 
 }
 
 /****************************************************************************************************/
 
 void ClampTest::test_pod_real_clamp()
 {
-	CPPUNIT_ASSERT( ccmath::abs(ccmath::clamp(5.f, 1.f, 10.f) - 5.f) < std::numeric_limits<float>::epsilon() );
-	CPPUNIT_ASSERT( ccmath::abs(ccmath::clamp(-5.f, 1.f, 10.f) - 1.f) < std::numeric_limits<float>::epsilon() );
-	CPPUNIT_ASSERT( ccmath::abs(ccmath::clamp(15.f, 1.f, 10.f) - 10.f) < std::numeric_limits<float>::epsilon() );	
-
-	CPPUNIT_ASSERT( ccmath::abs(ccmath::clamp(-50.f, -10.f, 10.f) + 10.f) < std::numeric_limits<float>::epsilon() );
-	CPPUNIT_ASSERT( ccmath::abs(ccmath::clamp(50.f, -10.f, 10.f) - 10.f) < std::numeric_limits<float>::epsilon() );
+	float x;
+	x =   5; ccmath::clamp(x, 1.f, 10.f);	CPPUNIT_ASSERT( (x - 5.f) < std::numeric_limits<float>::epsilon() );
+	                                  
+	x =  -5; ccmath::clamp(x, 1.f, 10.f);	CPPUNIT_ASSERT( (x - 1.f) < std::numeric_limits<float>::epsilon() );
+	x =  15; ccmath::clamp(x, 1.f, 10.f);	CPPUNIT_ASSERT( (x - 10.f) < std::numeric_limits<float>::epsilon() );	
+                                    
+	x = -50; ccmath::clamp(x, -10.f, 10.f); CPPUNIT_ASSERT( (x + 10.f) < std::numeric_limits<float>::epsilon() );
+	x =  50; ccmath::clamp(x, -10.f, 10.f); CPPUNIT_ASSERT( (x - 10.f) < std::numeric_limits<float>::epsilon() );
 }
 
 /****************************************************************************************************/
 
 void ClampTest::test_imath_vec_clamp()
 {
-	CPPUNIT_ASSERT( ccmath::clamp(_imath_vec2_int, 1, 10) == Imath::Vec2<int>(10, 1) );
+	_imath_vec2_int.setValue(15,-20); ccmath::clamp(_imath_vec2_int, 1, 10); CPPUNIT_ASSERT( _imath_vec2_int == Imath::Vec2<int>(10, 1) );
 }
 
 /****************************************************************************************************/
 
 void ClampTest::test_custom_vec_clamp()
 {
-	CPPUNIT_ASSERT( ccmath::clamp(_custom_vec3, 1, 10) == MyVector<int>(1, 8, 10) );
-}
-
-/****************************************************************************************************/
-
-template <int size, typename T>
-static inline T clampgen(T x, T a, T b)
-{
-	return (x < a ? a : (x > b ? b : x) );
+	_custom_vec3 = MyVector<int>(-7, 8, 25); ccmath::clamp(_custom_vec3, 1, 10); CPPUNIT_ASSERT( _custom_vec3 == MyVector<int>(1, 8, 10) );
 }
 
 /****************************************************************************************************/
