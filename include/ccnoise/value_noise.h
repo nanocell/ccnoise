@@ -26,28 +26,33 @@ namespace ccnoise
 			void init();
 
 			//Generate 1D noise value from 3D input
-			T get(T x, T y, T z);
+			void get(T& r, T x, T y, T z);
+			void get(T& r, T x);
 
 			/* Populate a table containing pseudo random values.
 			 * The generation of this table may differ depending on the noise algorithm.
 			 * For value noise, it is a table of PRNs between -1 and 1.
 			 *
 			 */
-			template<typename IteratorT>
-			void populate_prn_table(IteratorT it_begin, IteratorT it_end);
 		
 		protected:
 	
 			//TODO: Implement getPermutedIndex as recursive template function (templated on dimension)
 			// e.g. getPermutedIndex<4>(ix, iy, iz, it);
 			unsigned int getPermutedIndex(int ix, int iy, int iz) { return perm( ix + perm(iy + perm(iz)) ); }
+			unsigned int getPermutedIndex(int ix) { return perm( ix ); }
+			
 			unsigned int perm(int i) { return _permtable[ ccmath::abs(i % _tablesize) ]; }
 
 			//Get the PRN on the lattice associated with the integer lattice coords
 			T getPrn(int ix, int iy, int iz) { return _prntable[ getPermutedIndex(ix, iy, iz) ]; }
+			T getPrn(int ix) { return _prntable[ getPermutedIndex(ix) ]; }
 
 			void init_permutation_table();
 			void init_prn_table();
+			
+			template<typename IteratorT>
+			void populate_prn_table(IteratorT it_begin, IteratorT it_end);
 
 			unsigned int _tablesize;
 			std::vector<T> _prntable;
@@ -88,7 +93,7 @@ namespace ccnoise
 	template<typename T>
 	value_noise<T>::value_noise()
 	{
-		value_noise(256);
+		_tablesize = 256;
 	}
 
 	/****************************************************************************************************/
@@ -111,7 +116,7 @@ namespace ccnoise
 	/****************************************************************************************************/
 
 	template<typename T>
-	T value_noise<T>::get(T x, T y, T z)
+	void value_noise<T>::get(T& r, T x, T y, T z)
 	{
 		int ix, iy, iz;
 		int i, j, k;
@@ -125,20 +130,43 @@ namespace ccnoise
 		iy = floor(y);
 		fy = y - iy;
 		iz = floor(z);
+		fz = z - iz;
 
 		for (k = 0; k < 4; ++k)
 		{
-			for (j = 0; k < 4; ++j)
+			for (j = 0; j < 4; ++j)
 			{
 				for (i = 0; i < 4; ++i)
 				{
 					xknots[i] = getPrn(ix+i-1, iy+j-1, iz+k-1);
 				}
-				yknots[j] = ccmath::spline(fx, 4, xknots);
+				ccmath::spline(yknots[j], fx, xknots, 4);
 			}
-			zknots[k] = ccmath::spline(fy, 4, yknots);
+			ccmath::spline(zknots[k], fy, yknots, 4);
 		}
-		return ccmath::spline(fz, 4, zknots);
+		ccmath::spline(r, fz, zknots, 4);
+	}
+	
+	/****************************************************************************************************/
+
+	template<typename T>
+	void value_noise<T>::get(T& r, T x)
+	{
+		int ix;
+		int i;
+		T fx;
+		T xknots[4];
+
+		//simple cubic catmull rom spline interpolation implementation
+
+		ix = floor(x);
+		fx = x - ix;
+
+		for (i = 0; i < 4; ++i)
+		{
+			xknots[i] = getPrn(ix+i-1);
+		}
+		ccmath::spline(r, fx, xknots, 4);
 	}
 
 	/****************************************************************************************************/

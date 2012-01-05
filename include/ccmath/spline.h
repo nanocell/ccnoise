@@ -4,6 +4,7 @@
 
 #include <boost/call_traits.hpp>
 #include <boost/type_traits.hpp>
+#include <boost/mpl/if.hpp>
 #include <OpenEXR/ImathMatrix.h>
 #include <iostream>
 #include <ccmath/clamp.h>
@@ -12,29 +13,44 @@
 namespace ccmath
 {
 
-	//For a derivation of Catmull Rom splines and basis matrix, refer to "Catmull Rom splines", Christopher Twigg, 2003.
+	//For a derivation of Catmull Rom splines and the basis matrix, refer to "Catmull Rom splines", Christopher Twigg, 2003.
 	
-
-	template<typename T, bool transpose>
-	struct spline_basis
-	{
-		//Coefficients for basis matrix
-		static const Imath::Matrix44<T> coeff;
-		static const Imath::Matrix44<T> coeff_transposed;
-	};
-
 	/****************************************************************************************************/
 	
-	template<typename T, bool transpose>
-	const Imath::Matrix44<T> spline_basis<T, transpose>::coeff(
+	template<typename T>
+	struct spline_basis_normal
+	{
+		typedef spline_basis_normal<T> type;
+		typedef T value_type;
+		typedef Imath::Matrix44<T> matrix_type;
+
+		//Coefficients for basis matrix
+		static const matrix_type coeff;
+	};
+
+	template<typename T>
+	const Imath::Matrix44<T> spline_basis_normal<T>::coeff(
 			0.0, 1.0, 0.0, 0.0,
 			-0.5,0.0, 0.5, 0.0,
 			1.0,-2.5, 2.0,-0.5,
 			-0.5,1.5,-1.5, 0.5
 			);
 
-	template<typename T, bool transpose>
-	const Imath::Matrix44<T> spline_basis<T, transpose>::coeff_transposed(
+	/****************************************************************************************************/
+
+	template<typename T>
+	struct spline_basis_transposed
+	{
+		typedef spline_basis_transposed<T> type;
+		typedef T value_type;
+		typedef Imath::Matrix44<T> matrix_type;
+
+		//Coefficients for basis matrix
+		static const matrix_type coeff;
+	};
+
+	template<typename T>
+	const Imath::Matrix44<T> spline_basis_transposed<T>::coeff(
 			0.0,-0.5, 1.0,-0.5,
 			1.0, 0.0,-2.5, 1.5,
 			0.0, 0.5, 2.0,-1.5,
@@ -43,54 +59,115 @@ namespace ccmath
 
 	/****************************************************************************************************/
 
+	template<typename T, bool transpose>
+	struct spline_basis : 
+		boost::mpl::eval_if< boost::mpl::bool_<transpose>, spline_basis_normal<T>, spline_basis_transposed<T> >::type
+	{	};
+
+
+	/****************************************************************************************************/
+
 	//This spline function is based on the spline implementation presented in Texturing & Modeling: A Procedural Approach, 3rd Edition.
+	
+	/****************************************************************************************************/
 
-	//TODO: Add multidimensional interpolation support.
-
-	template<typename sampleT, typename knotT>
-	const sampleT spline(sampleT const& x, knotT const& knots)
+	template<typename sampleT, typename knotValueType, typename knotItType>
+	//void spline1(typename knotT::value_type& result, const sampleT& x, knotIt knots, size_t numKnots)
+	void spline1(knotValueType& result, const sampleT& x, knotItType knotIterator, size_t numKnots)
 	{
-		//TODO: Add static assert:
-		// assert( type_traits<sampleT>::type == type_traits<knotT>::value_type )
-		typedef typename knotT::value_type knot_value_t;
+		//sampleT must a floating point value
+		BOOST_STATIC_ASSERT(( boost::is_floating_point<sampleT>::value ));
 
-		typename knotT::const_iterator knotIt = knots.begin();
+		typedef knotValueType knot_value_t;
+
+		knotItType knotIt = knotIterator;
 		sampleT v;
 
 		size_t span;
-		size_t numKnots = knots.size();
 		size_t nspans = numKnots - 3;
 
 		if (numKnots < 4) // illegal
 		{
+			//TODO: throw exception
 			std::cerr << "Spline doesn't have enough knots. " << std::endl;
-			return 0;
+			return;
 		}
-
+		
 		//Find the appropriate 4-point span of the spline
 		v = x;
 		clamp(v, 0.f, 1.f);
 		v = v * nspans;
-		
+	
 		span = static_cast<size_t>( floor(v) );
 
-		if (span >= numKnots - 3)
-			span = numKnots - 3;
-		v -= span;
+		if (span > numKnots - 4)
+			span = numKnots - 4;
 
-		knotIt += span; // advance the iterator to the correct place
-		knot_value_t k0 = *knotIt; ++knotIt;
-		knot_value_t k1 = *knotIt; ++knotIt;
-		knot_value_t k2 = *knotIt; ++knotIt;
-		knot_value_t k3 = *knotIt; 
+		if (nspans > 1)
+		{
+			//We don't need to adjust these values if we only have one span.
+			v -= span;
+			knotIt += span; // advance the iterator to the correct span
+		}
+
+		const knot_value_t& k0 = *knotIt; ++knotIt;
+		const knot_value_t& k1 = *knotIt; ++knotIt;
+		const knot_value_t& k2 = *knotIt; ++knotIt;
+		const knot_value_t& k3 = *knotIt; 
 
 		Imath::Vec4<knot_value_t> k(k0, k1, k2, k3);
+		const typename spline_basis<float, true>::matrix_type& m = spline_basis<float, false>::coeff;
+
 		//Calculate the coefficients of the cubic polynomial
-		Imath::Vec4<knot_value_t> r = k * spline_basis<knot_value_t, true>::coeff_transposed;
+		Imath::Vec4<knot_value_t> r = k * m;
 
 		//Evaluate the cubic polynomial.
-		return r[0] + v*(r[1] + v*(r[2] + v*r[3])); 
+		//result = r[0] + v*(r[1] + v*(r[2] + v*r[3]));
+		result = 0.f;
+		result =((r[2] + v*r[3])*v + r[1])*v + r[0];
 	}
+
+	/****************************************************************************************************/
+
+	//Input: result reference, spline sample, *container* with knots
+	template<typename sampleT, typename knotT>
+	inline void spline(typename knotT::value_type& result, const sampleT& x, const knotT& knots)
+	{
+		spline1<sampleT, typename knotT::value_type, typename knotT::const_iterator>(result, x, knots.begin(), knots.size() );
+	}
+	
+	/****************************************************************************************************/
+	
+	//Input: result reference, spline sample, pointer to array of knots, number of knots
+	template<typename sampleT, typename knotT>
+	inline void spline(knotT& result, const sampleT& x, const knotT* knots, size_t numknots)
+	{
+		spline1<sampleT, knotT, const knotT*>(result, x, knots, numknots );
+	}
+
+	/****************************************************************************************************/
+
+	//TODO: Enable this function only if knotT is a container with in iterator
+	//      or add a compile time exception to verify this
+	template<typename sampleT, typename knotT>
+	inline typename knotT::value_type spline(const sampleT& x, const knotT& knots)
+	{
+		typename knotT::value_type r;
+		spline(r, x, knots); //invoke the container
+		return r;
+	}
+	
+	/****************************************************************************************************/
+	
+	template<typename sampleT, typename knotT>
+	inline knotT spline(const sampleT& x, const knotT* knots, size_t numknots)
+	{
+		knotT r;
+		spline(r, x, knots, numknots);
+		return r;
+	}
+	
+	/****************************************************************************************************/
 
 };
 

@@ -1,5 +1,5 @@
 
-//#include <ccnoise/value_noise.h>
+#include <ccnoise/value_noise.h>
 
 #include <ccmath/spline.h>
 
@@ -8,36 +8,36 @@
 #include <iostream>
 #include <vector>
 
-//namespace ccn = ccnoise;
+namespace ccn = ccnoise;
 
 int main(int argc, char* argv[])
 {
 	std::cout << "initialising noise context..." << std::endl;
-	//ccn::noise<ccn::value, float> ctx(256);
+	ccn::value_noise<float> noise(1024);
+	noise.init();
+
+	float n;
+	float f = 0.0f;
+	float finc = 0.01;
+
+	for (f = 0.0f; f < 1.0f; f += finc)
+	{
+		noise.get(n, f);
+		std::cout << "[" << f << "] " << n << std::endl;
+	}
 	
-
-	//Jotting down some ideas for generating noise.
-	//std::vector< Vec3 > data_in;
-	//std::vector< float > data_out;
-	//ccn::noise<ccn::value, float> ctx(256);
-	//ccn::turbulence<ccn::value> turb(ctx);
-	//
-	//noise algorithm, base type, dimensions
-	//
-	//ccn::noise<ccn::value, float, 3>( data_in.begin(), data_in.end(), data_out.begin() );
-	//ccn::turbulence<ccn::value>
-	//
-
-
+	/*
+	int count = 10000000;
+	std::cout << "performing " << count << " noise calls." << std::endl;
+	f = 0.f;
+	for (unsigned int i = 0; i < count; ++i)
+	{
+		noise.get(n, f);
+		f+=finc;
+	}
+	std::cout << "done." << std::endl;
 	
-	//ccn::value_noise<float> vnoise(256);
-	//vnoise.init();
-
-	//float f = vnoise.get(1.2f, 3.1f, 4.7f);
-
-
-	//ccnoise::value_noise<float> vnoise(256);
-	//vnoise.init();
+	*/
 
 
 	

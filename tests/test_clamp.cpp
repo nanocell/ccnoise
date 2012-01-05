@@ -11,7 +11,7 @@
 #include <cppunit/CompilerOutputter.h>
 
 #include <OpenEXR/ImathVec.h>
-#include <ccmath/imath_container_adaptor.h>
+#include <ccmath/imath_type_traits.h>
 
 #include <sysexits.h>
 #include <iostream>

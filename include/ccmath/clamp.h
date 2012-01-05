@@ -6,7 +6,7 @@
 #include <boost/call_traits.hpp>
 #include <boost/mpl/if.hpp>
 
-#include <ccmath/container_adaptor.h>
+#include <ccmath/type_traits.h>
 
 #include <iostream>
 
@@ -15,9 +15,9 @@ namespace ccmath
 	/****************************************************************************************************/
 
 	template<typename T>
-	typename boost::disable_if<boost::is_pod<T>, void>::type clamp(T& x, typename container_adaptor<T>::value_type min, typename container_adaptor<T>::value_type max)
+	typename boost::disable_if<boost::is_pod<T>, void>::type clamp(T& x, typename type_traits<T>::value_type min, typename type_traits<T>::value_type max)
 	{
-		for (typename container_adaptor<T>::size_type i = 0; i < container_adaptor<T>::size::value; ++i)
+		for (typename type_traits<T>::size_type i = 0; i < type_traits<T>::size::value; ++i)
 		{
 			if (x[i]<min)
 				x[i] = min;
