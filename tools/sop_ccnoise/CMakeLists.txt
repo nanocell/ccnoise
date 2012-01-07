@@ -5,16 +5,9 @@ find_package( Houdini REQUIRED )
 
 include_directories(${HOUDINI_INCLUDE_DIR})
 
-message("final libs: ${HOUDINI_LIBRARIES}")
-
-add_library(sop_ccnoise SHARED sop_ccnoise/sop_ccnoise.cpp)
+add_library(sop_ccnoise sop_ccnoise/sop_ccnoise.cpp)
 target_link_libraries(sop_ccnoise ${HOUDINI_LIBARIES} )
-
-set_target_properties(sop_ccnoise 
-	PROPERTIES 
-	COMPILE_FLAGS "${HOUDINI_FLAGS} ${HOUDINI_DSO_FLAGS}"
-	PREFIX ""
-	)
+set_target_properties(sop_ccnoise PROPERTIES COMPILE_FLAGS ${HOUDINI_FLAGS})
 
 #install( TARGETS gentable DESTINATION bin/gentable )
 

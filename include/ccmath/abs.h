@@ -9,52 +9,18 @@
 namespace ccmath
 {
 
-	template <typename T, bool is_integral>
-	struct abs1 { };
-
-	/****************************************************************************************************/
-
-	//integral abs call
-	template<typename T>
-	struct abs1<T, true>
-	{
-		static inline T apply(T v)
-		{
-			return std::abs(v);
-		}
-	};
-
-	/****************************************************************************************************/
-
-	//real abs call
-	template<typename T>
-	struct abs1<T, false>
-	{
-		static inline T apply(T v)
-		{
-			return std::fabs(v);
-		}
-	};
-
-	/****************************************************************************************************/
-
-
-	/*
 	template <typename T>
-	inline T abs(T v)
-	{
-		return abs1<T, boost::is_integral<T>::value>::apply(v); 
-	}
-	*/
-
-	//custom abs implementation
-	
-	template <typename T>
-	inline T abs(T x)
+	inline typename boost::disable_if< boost::is_unsigned<T>, T>::type abs(T x)
 	{
 		return (x < 0 ? -x : x);
 	}
 
+	//If the arguments
+	template <typename T>
+	inline typename boost::enable_if< boost::is_unsigned<T>, T>::type abs(T x)
+	{
+		return x;
+	}
 };
 
 #endif

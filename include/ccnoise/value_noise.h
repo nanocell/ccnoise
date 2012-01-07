@@ -27,6 +27,7 @@ namespace ccnoise
 
 			//Generate 1D noise value from 3D input
 			void get(T& r, T x, T y, T z);
+			//Generate 1D noise value from 1D input.
 			void get(T& r, T x);
 
 			/* Populate a table containing pseudo random values.
@@ -64,8 +65,6 @@ namespace ccnoise
 	template <typename T> template<typename IteratorT>
 	void value_noise<T>::populate_prn_table(IteratorT it_begin, IteratorT it_end)
 	{
-		std::cout << "value_noise::populate_prn_table" << std::endl;	
-		
 		//Perform a random shuffle, using the mersenne twister and random number generator
 		boost::mt19937 gen; // generate raw random numbers
 		boost::uniform_real<> dist(-1,1); // distribution of random numbers to generate.
@@ -177,7 +176,6 @@ namespace ccnoise
 		_permtable.resize(_tablesize);
 
 		//Fill the permtable with values and permute them
-		std::cout << "value_noise::init_permutation_table..." << std::endl;
 		for (int i = 0; i < _tablesize; ++i)
 		{
 			_permtable[i] = i;
@@ -198,7 +196,6 @@ namespace ccnoise
 	template<typename T>
 	void value_noise<T>::init_prn_table() 
 	{
-		std::cout << "value_noise::init_prn_table..." << std::endl;
 		_prntable.resize(_tablesize);
 
 		populate_prn_table(_prntable.begin(), _prntable.end());
@@ -207,7 +204,6 @@ namespace ccnoise
 	}
 
 	/****************************************************************************************************/
-
 };
 
 #endif
