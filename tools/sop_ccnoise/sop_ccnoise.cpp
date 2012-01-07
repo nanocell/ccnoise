@@ -17,9 +17,13 @@
 
 #include <boost/array.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <ccnoise/value_noise.h>
 #include <hdk/parm/parm.h>
 #include <vector>
+
+#include <ccnoise/value_noise.h>
+#include <ccnoise/gradient_noise.h>
+
+#include <ccmath/traits/imath_type_traits.h>
 
 #include "sop_ccnoise.h"
 
@@ -51,7 +55,6 @@ void newSopOperator(OP_OperatorTable *table)
 }
 
 static Parm<1, Defaults1> PrmNoiseDimension(PRM_ORD, "dim", "Noise Dimension", MakeDefaults(1.f));
-static Parm<1, Defaults1> PrmNoiseDimension1(PRM_ORD, "dim", "Noise Dimension");
 static Parm<3, Defaults3> PrmFrequency(PRM_XYZ, "freq", "Frequency", MakeDefaults(1.f, 1.f, 1.f));
 static Parm<3, Defaults3> PrmOffset(PRM_XYZ, "offs", "Offset", MakeDefaults(0.f, 0.f, 0.f));
 static Parm<1, Defaults1, Range> PrmAmplitude(PRM_FLT, "amp", "Amplitude", MakeDefaults(0.f), Range(0.f, 10.f));
@@ -139,21 +142,37 @@ OP_ERROR SOP_CCNoise::cookMySop(OP_Context &context)
 	fpreal t = context.getTime();
 	UT_Interrupt *boss;
 
-	
 	boss = UTgetInterrupt();
-
 	duplicatePointSource(0, context);
 
+	GEO_AttributeHandle attr;
 
+	int dim = evalInt(PrmNoiseDimension.name.c_str(), 0, t);	
 
+	attr = gdp->getPointAttribute("Cd");
 
-
-	GEO_AttributeHandle attrCd = gdp->getPointAttribute("Cd");
-
-	if (attrCd.isAttributeValid())
+	if (attr.isAttributeValid())
 	{
 		//Iterate over all the points and apply a noise to the given attribute
-		applyNoise< ccnoise::value_noise<float> >(attrCd, t);
+		//applyNoise< ccnoise::value_noise<float> >(attr, t);
+	}
+	
+	attr = gdp->getPointAttribute("Cd");
+
+	if (attr.isAttributeValid())
+	{
+		switch (dim)
+		{
+			case 0:
+				//Iterate over all the points and apply a noise to the given attribute
+				applyNoise< ccnoise::gradient<float> >(attr, t);
+				break;
+			case 1:
+				applyNoise< ccnoise::value<float> >(attr, t);
+				break;
+			default:
+				break;
+		}
 	}
 
 

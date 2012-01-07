@@ -8,12 +8,10 @@
 #include <iostream>
 #include <vector>
 
-namespace ccn = ccnoise;
-
 int main(int argc, char* argv[])
 {
 	std::cout << "initialising noise context..." << std::endl;
-	ccn::value_noise<float> noise(1024);
+	ccnoise::value<float> noise(1024);
 	noise.init();
 
 	float n;

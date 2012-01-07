@@ -11,11 +11,17 @@ target_link_libraries(test_spline ${CPPUNIT_LIBRARIES})
 add_executable(test_clamp test_clamp.cpp )
 target_link_libraries(test_clamp ${CPPUNIT_LIBRARIES})
 
+add_executable(test_floor test_floor.cpp )
+target_link_libraries(test_floor ${CPPUNIT_LIBRARIES})
+
+add_executable(test_smoothstep test_smoothstep.cpp )
+target_link_libraries(test_smoothstep ${CPPUNIT_LIBRARIES})
+
 add_executable(test_vector test_vector.cpp Vector3.cpp Matrix33.cpp)
 target_link_libraries(test_vector ${CPPUNIT_LIBRARIES})
 
 #install( TARGETS test_vnoise DESTINATION bin/test_vnoise )
-install( TARGETS test_spline DESTINATION bin/test_spline )
-install( TARGETS test_clamp DESTINATION bin/test_clamp )
+#install( TARGETS test_spline DESTINATION bin/test_spline )
+#install( TARGETS test_clamp DESTINATION bin/test_clamp )
 
 

@@ -2,7 +2,7 @@
 #ifndef __CCMATH_IMATH_TYPE_TRAITS_H__
 #define __CCMATH_IMATH_TYPE_TRAITS_H__
 
-#include <ccmath/type_traits.h>
+#include <ccmath/traits/type_traits.h>
 #include <boost/mpl/int.hpp>
 #include <OpenEXR/ImathVec.h>
 

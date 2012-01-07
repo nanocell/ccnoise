@@ -6,9 +6,7 @@
 #include <boost/call_traits.hpp>
 #include <boost/mpl/if.hpp>
 
-#include <ccmath/type_traits.h>
-
-#include <iostream>
+#include <ccmath/traits/type_traits.h>
 
 namespace ccmath
 {
