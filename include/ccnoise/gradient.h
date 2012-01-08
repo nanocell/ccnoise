@@ -1,27 +1,30 @@
 
-#ifndef __value_H__
-#define __value_H__
+#ifndef __gradient_H__
+#define __gradient_H__
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/random.hpp>
 #include <boost/generator_iterator.hpp>
 #include <boost/range/algorithm/random_shuffle.hpp>
 #include <vector>
-//#include <cmath>
+#include <cmath>
 
-#include <ccmath/spline.h>
 #include <ccmath/abs.h>
+#include <ccmath/floor.h>
+#include <ccmath/lerp.h>
+#include <ccmath/smoothstep.h>
+#include <ccmath/spline.h>
 
 namespace ccnoise
 {
 
 	template<typename T>
-	class value
+	class gradient
 	{
 		public:
-			value(unsigned int tablesize);
-			value();
-			~value();
+			gradient(unsigned int tablesize);
+			gradient();
+			~gradient();
 
 			void init();
 
@@ -46,8 +49,16 @@ namespace ccnoise
 			unsigned int perm(int i) { return _permtable[ ccmath::abs(i % _tablesize) ]; }
 
 			//Get the PRN on the lattice associated with the integer lattice coords
-			T getPrn(int ix, int iy, int iz) { return _prntable[ getPermutedIndex(ix, iy, iz) ]; }
-			T getPrn(int ix) { return _prntable[ getPermutedIndex(ix) ]; }
+			T getPrn(int ix, int iy, int iz, float fx, float fy, float fz) 
+			{
+				T* t = &_prntable[ getPermutedIndex(ix,iy,iz)*3 ];
+				return t[0]*fx + t[1]*fy + t[2]*fz;
+			}
+
+			//T getPrn(int ix, float fx) 
+			//{ 
+			//	return _prntable[ getPermutedIndex(ix)*3 ] * fx; 
+			//}
 
 			void init_permutation_table();
 			void init_prn_table();
@@ -63,17 +74,24 @@ namespace ccnoise
 	/****************************************************************************************************/
 
 	template <typename T> template<typename IteratorT>
-	void value<T>::populate_prn_table(IteratorT it_begin, IteratorT it_end)
+	void gradient<T>::populate_prn_table(IteratorT it_begin, IteratorT it_end)
 	{
 		//Perform a random shuffle, using the mersenne twister and random number generator
 		boost::mt19937 gen; // generate raw random numbers
-		boost::uniform_real<> dist(-1,1); // distribution of random numbers to generate.
+		boost::uniform_real<> dist(0.f,1.f); // distribution of random numbers to generate.
 		boost::variate_generator< boost::mt19937, boost::uniform_real<> > draw_rnd(gen, dist);
 
+		float z, r, theta;
+
 		//Fill the data table with pseudo random values between -1 and 1
-		for (IteratorT it = it_begin; it != it_end; ++it)
+		for (IteratorT it = it_begin; it != it_end; )
 		{
-			*it = draw_rnd(); // draw the next random number
+			z = 1.f - 2.f*draw_rnd(); // draw the next random number
+			r = sqrtf(1.f-z*z);
+			theta = 2.f * M_PI * draw_rnd();
+			*it = r*cosf(theta); ++it;
+			*it = r*sinf(theta); ++it;
+			*it = z; ++it;
 		}
 	}
 	
@@ -81,7 +99,7 @@ namespace ccnoise
 
 
 	template<typename T>
-	value<T>::value(unsigned int tablesize)
+	gradient<T>::gradient(unsigned int tablesize)
 		: _tablesize(tablesize)
 	{
 
@@ -90,15 +108,15 @@ namespace ccnoise
 	/****************************************************************************************************/
 
 	template<typename T>
-	value<T>::value()
+	gradient<T>::gradient()
 	{
-		_tablesize = 1024;
+		_tablesize = 256;
 	}
 
 	/****************************************************************************************************/
 
 	template<typename T>
-	value<T>::~value()
+	gradient<T>::~gradient()
 	{
 
 	}
@@ -106,7 +124,7 @@ namespace ccnoise
 	/****************************************************************************************************/
 	
 	template<typename T>
-	void value<T>::init()
+	void gradient<T>::init()
 	{
 		init_permutation_table();
 		init_prn_table();
@@ -115,41 +133,46 @@ namespace ccnoise
 	/****************************************************************************************************/
 
 	template<typename T>
-	void value<T>::get(T& r, T x, T y, T z)
+	void gradient<T>::get(T& r, T x, T y, T z)
 	{
-		int ix, iy, iz;
-		int i, j, k;
-		T fx, fy, fz;
-		T xknots[4], yknots[4], zknots[4];
 
-		//simple cubic catmull rom spline interpolation implementation
+		Imath::Vec3<T> v(x,y,z);
+		Imath::Vec3<T> vi;
+		Imath::Vec3<T> f0,f1;
+		Imath::Vec3<T> w;
 
-		ix = floor(x);
-		fx = x - ix;
-		iy = floor(y);
-		fy = y - iy;
-		iz = floor(z);
-		fz = z - iz;
+		ccmath::floor(vi, v);
+		f0 = v-vi; //fractions vector
+		f1 = f0 - Imath::Vec3<T>(1, 1, 1);
+		ccmath::smoothstep(w, f0);
 
-		for (k = 0; k < 4; ++k)
-		{
-			for (j = 0; j < 4; ++j)
-			{
-				for (i = 0; i < 4; ++i)
-				{
-					xknots[i] = getPrn(ix+i-1, iy+j-1, iz+k-1);
-				}
-				ccmath::spline(yknots[j], fx, xknots, 4);
-			}
-			ccmath::spline(zknots[k], fy, yknots, 4);
-		}
-		ccmath::spline(r, fz, zknots, 4);
+		Imath::Vec3<T> v0, v1;
+
+		v0.x = getPrn(vi.x,   vi.y, vi.z, f0.x, f0.y, f0.z);
+		v1.x = getPrn(vi.x+1, vi.y, vi.z, f1.x, f0.y, f0.z);
+		ccmath::lerp(v0.y, w.x, v0.x, v1.x);
+
+		v0.x = getPrn(vi.x,  vi.y+1, vi.z, f0.x, f1.y, f0.z);
+		v1.x = getPrn(vi.x+1, vi.y+1, vi.z, f1.x, f1.y, f0.z);
+		ccmath::lerp(v1.y, w.x, v0.x, v1.x);
+		ccmath::lerp(v0.z, w.y, v0.y, v1.y);
+
+		v0.x = getPrn(vi.x,   vi.y, vi.z+1, f0.x, f0.y, f1.z);
+		v1.x = getPrn(vi.x+1, vi.y, vi.z+1, f1.x, f0.y, f1.z);
+		ccmath::lerp(v0.y, w.x, v0.x, v1.x);
+
+		v0.x = getPrn(vi.x,   vi.y+1, vi.z+1, f0.x, f1.y, f1.z);
+		v1.x = getPrn(vi.x+1, vi.y+1, vi.z+1, f1.x, f1.y, f1.z);
+		ccmath::lerp(v1.y, w.x, v0.x, v1.x);
+		ccmath::lerp(v1.z, w.y, v0.y, v1.y);
+
+		ccmath::lerp(r, w.z, v0.z, v1.z);	
 	}
 	
 	/****************************************************************************************************/
 
 	template<typename T>
-	void value<T>::get(T& r, T x)
+	void gradient<T>::get(T& r, T x)
 	{
 		int ix;
 		int i;
@@ -171,7 +194,7 @@ namespace ccnoise
 	/****************************************************************************************************/
 
 	template<typename T>
-	void value<T>::init_permutation_table() 
+	void gradient<T>::init_permutation_table() 
 	{
 		_permtable.resize(_tablesize);
 
@@ -194,9 +217,9 @@ namespace ccnoise
 	//************************************************************************************************
 
 	template<typename T>
-	void value<T>::init_prn_table() 
+	void gradient<T>::init_prn_table() 
 	{
-		_prntable.resize(_tablesize);
+		_prntable.resize(_tablesize * 3);
 
 		populate_prn_table(_prntable.begin(), _prntable.end());
 

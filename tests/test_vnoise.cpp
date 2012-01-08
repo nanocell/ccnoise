@@ -1,5 +1,5 @@
 
-#include <ccnoise/value_noise.h>
+#include <ccnoise/value.h>
 
 #include <ccmath/spline.h>
 

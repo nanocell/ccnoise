@@ -20,8 +20,8 @@
 #include <hdk/parm/parm.h>
 #include <vector>
 
-#include <ccnoise/value_noise.h>
-#include <ccnoise/gradient_noise.h>
+#include <ccnoise/value.h>
+#include <ccnoise/gradient.h>
 
 #include <ccmath/traits/imath_type_traits.h>
 

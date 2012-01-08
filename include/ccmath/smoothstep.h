@@ -22,7 +22,7 @@ namespace ccmath
 		else
 		{
 			r = (x-min)/(max-min);
-			r = r*r*(3-2*r);
+			r = r*r*(3.f-2.f*r);
 		}
 	}
 
@@ -36,7 +36,7 @@ namespace ccmath
 	template<class T>
 	inline typename boost::enable_if<boost::is_pod<T>, void>::type smoothstep(T& r, T x)
 	{
-		r = x*x*(3-2*x);
+		r = x*x*(3.f-2.f*x);
 	}
 	
 	/****************************************************************************************************/
