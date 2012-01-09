@@ -9,7 +9,7 @@
 
 #include <SOP/SOP_Node.h>
 
-namespace hdk_ccnoise
+namespace cchdk
 {
 	class SOP_CCNoise : public SOP_Node
 	{
@@ -47,10 +47,27 @@ namespace hdk_ccnoise
 			//	{
 			//		return evalVariableValue(v, i, thread);
 			//	}
-		
-			//Apply noise to an attribute
+
 			template<class NoiseT>
-			void applyNoise(GEO_AttributeHandle& attr, fpreal time);
+			void applyNoiseFunction(fpreal t);
+			
+			template<class NoiseT>
+			void applyNoiseOnColor(GEO_AttributeHandle& attr, fpreal t);
+			
+			template<class NoiseT>
+			void applyNoiseOnPosition(GEO_AttributeHandle& attr, fpreal t);
+
+			template<class NoiseT>
+			void applyPositionDisplacementOnPosition(GEO_AttributeHandle& attr, fpreal t);
+			
+			template<class NoiseT>
+			void applyPositionDisplacementAlongVector(GEO_AttributeHandle& attr, std::string vector_name, fpreal t);
+
+			template<class ApplyT>
+			inline void applyNoiseToResult(UT_Vector4& pos, GEO_AttributeHandle& attr, GEO_AttributeHandle& attr_aux, float noise_value);
+			
+			template<class NoiseT, class ApplyT, bool UseAuxAttr>
+			void applyNoise(GEO_AttributeHandle& attr, GEO_AttributeHandle& attr_aux, fpreal time);
 
 		private:
 

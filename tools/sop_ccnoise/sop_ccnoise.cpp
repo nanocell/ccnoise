@@ -27,9 +27,6 @@
 
 #include "sop_ccnoise.h"
 
-using namespace hdk_ccnoise;
-using namespace cchdk;
-
 /****************************************************************************************************/
 
 
@@ -46,13 +43,16 @@ void newSopOperator(OP_OperatorTable *table)
 	table->addOperator( new OP_Operator(
 				"ccnoise",			// Internal name
 				"CCNoise",			// UI name
-				SOP_CCNoise::myConstructor,	// constructor
-				SOP_CCNoise::myTemplateList,	// ui parameters
+				cchdk::SOP_CCNoise::myConstructor,	// constructor
+				cchdk::SOP_CCNoise::myTemplateList,	// ui parameters
 				1,				// Min # of sources
 				1,				// Max # of sources
-				SOP_CCNoise::myVariables,	// Local variables
+				cchdk::SOP_CCNoise::myVariables,	// Local variables
 				0) );
 }
+
+namespace cchdk
+{
 
 static Parm<1, Defaults1> PrmNoiseDimension(PRM_ORD, "dim", "Noise Dimension", MakeDefaults(1.f));
 static Parm<3, Defaults3> PrmFrequency(PRM_XYZ, "freq", "Frequency", MakeDefaults(1.f, 1.f, 1.f));
@@ -63,19 +63,145 @@ static Menu3 noisetypes_menu = MakeMenu("value", "Value", "gradient", "Gradient 
 static Parm<1, Defaults1, Menu3> PrmNoise(PRM_ORD, "noise", "Noise", MakeDefaults(1), noisetypes_menu);
 
 static Menu4 attributes_menu = MakeMenu("position", "Position", "color", "Color", "normals", "Normals", "velocity", "Velocity");
-static Parm<1, Defaults1, Menu4> PrmAttributes(PRM_ORD, "applyto", "Apply To", MakeDefaults(0), attributes_menu);
+static Parm<1, Defaults1, Menu4> PrmApplyTo(PRM_ORD, "applyto", "Apply To", MakeDefaults(0), attributes_menu);
 
+static Menu2 displacement_menu = MakeMenu("along_normal", "Along Normal", "position", "Position"); 
+static Parm<1, Defaults1, Menu2> PrmDisplacement(PRM_ORD, "displacement", "Displacement", MakeDefaults(0), displacement_menu);
+
+static Parm<1, Defaults1> PrmComputeNormals(PRM_TOGGLE, "compute_normals", "Compute Normals", MakeDefaults(1.f));
 
 PRM_Template SOP_CCNoise::myTemplateList[] = {
 		PrmNoise.get(),
-		PrmAttributes.get(),
+		PrmApplyTo.get(),
 		PrmNoiseDimension.get(),
 		PrmFrequency.get(),
 		PrmOffset.get(),
 		PrmAmplitude.get(),
+		PRM_Template(PRM_SEPARATOR),
+		PrmDisplacement.get(),
+		PrmComputeNormals.get(),
     PRM_Template()
 };
 
+struct attribute_pos_tag {};
+struct attribute_color_tag {};
+
+//Tags for different methods to apply a noise value to the outgoing attribute
+struct apply_displace_along_vector_tag {}; 
+struct apply_displace_pos_tag {};
+struct apply_set_attribute_tag {};
+
+/****************************************************************************************************/
+template<>
+inline void SOP_CCNoise::applyNoiseToResult<apply_displace_along_vector_tag>(UT_Vector4& pos, GEO_AttributeHandle& attr, GEO_AttributeHandle& attr_vec, float noise_value)
+{
+	//Apply displacement along vector
+	pos += noise_value * UT_Vector4(attr_vec.getV3());
+}
+
+/****************************************************************************************************/
+template<>
+inline void SOP_CCNoise::applyNoiseToResult<apply_displace_pos_tag>(UT_Vector4& pos, GEO_AttributeHandle& attr, GEO_AttributeHandle& attr_vec, float noise_value)
+{
+	//Displace the position with a 3D noise
+}
+
+/****************************************************************************************************/
+
+template<>
+inline void SOP_CCNoise::applyNoiseToResult<apply_set_attribute_tag>(UT_Vector4& pos, GEO_AttributeHandle& attr, GEO_AttributeHandle& attr_aux, float noise_value)
+{
+	//Set the given attribute directly from the noise value
+	attr.setV3(UT_Vector3(noise_value, noise_value, noise_value));
+}
+
+/****************************************************************************************************/
+
+template<class NoiseT>
+void SOP_CCNoise::applyPositionDisplacementAlongVector(GEO_AttributeHandle& attr, std::string vector_name, fpreal t)
+{
+	//Apply displacement along the normal
+	GEO_AttributeHandle nml = gdp->getPointAttribute( vector_name.c_str() );
+
+	applyNoise<NoiseT, apply_displace_along_vector_tag, true>(attr, nml, t);
+}
+
+/****************************************************************************************************/
+
+template<class NoiseT>
+void SOP_CCNoise::applyPositionDisplacementOnPosition(GEO_AttributeHandle& attr, fpreal t)
+{
+	//Perform a displacement on the position
+	GEO_AttributeHandle unused;
+
+	applyNoise<NoiseT, apply_displace_pos_tag, false>(attr, unused, t);
+}
+
+/****************************************************************************************************/
+
+template<class NoiseT>
+void SOP_CCNoise::applyNoiseOnPosition(GEO_AttributeHandle& attr, fpreal t)
+{
+	//Apply noise on position
+	
+	int displacement_type = evalInt(PrmDisplacement.name.c_str(), 0, t);
+
+	switch (displacement_type)
+	{
+		case 0: // displacement along normal (this will invoke a noise with a 1D result)
+			applyPositionDisplacementAlongVector<NoiseT>(attr, "N", t);
+			break;
+		case 1: // displace position (this will invoke a noise function with a 3D result
+			applyPositionDisplacementOnPosition<NoiseT>(attr, t);
+			break;
+		default:
+			break;
+	};
+
+}
+
+/****************************************************************************************************/
+
+template<class NoiseT>
+void SOP_CCNoise::applyNoiseOnColor(GEO_AttributeHandle& attr, fpreal t)
+{
+	//Apply noise on color
+	GEO_AttributeHandle unused;
+	applyNoise<NoiseT, apply_set_attribute_tag, false>(attr, unused, t);
+}
+
+/****************************************************************************************************/
+
+template<class NoiseT>
+void SOP_CCNoise::applyNoiseFunction(fpreal t)
+{
+	//Evaluate the attribute on which noise values should be applied.
+	int attribute_type = evalInt(PrmApplyTo.name.c_str(), 0, t);
+
+	GEO_AttributeHandle attr;
+	switch (attribute_type)
+	{
+		case 0:
+			attr = gdp->getPointAttribute("P");
+
+			applyNoiseOnPosition<NoiseT>(attr, t);
+			break;
+		case 1:
+			attr = gdp->getPointAttribute("Cd");
+			if (!attr.isAttributeValid())
+			{
+				gdp->addPointAttrib("Cd", sizeof(float)*3, GB_ATTRIB_FLOAT, 0);
+				attr = gdp->getPointAttribute("Cd");
+			}
+	
+			applyNoiseOnColor<NoiseT>(attr, t);
+			break;
+		default:
+			break;
+	}
+}
+
+/****************************************************************************************************/
 
 // Here's how we define local variables for the SOP.
 enum {
@@ -154,36 +280,23 @@ OP_ERROR SOP_CCNoise::cookMySop(OP_Context &context)
 	boss = UTgetInterrupt();
 	duplicatePointSource(0, context);
 
-	GEO_AttributeHandle attr;
+	int noise_function = evalInt(PrmNoise.name.c_str(), 0, t);
 
-	int noise_function = evalInt(PrmNoise.name.c_str(), 0, t);	
-
-	attr = gdp->getPointAttribute("Cd");
-
-	if (attr.isAttributeValid())
+	switch (noise_function)
 	{
-		//Iterate over all the points and apply a noise to the given attribute
-		//applyNoise< ccnoise::value_noise<float> >(attr, t);
-	}
-	
-	attr = gdp->getPointAttribute("Cd");
-
-	if (attr.isAttributeValid())
-	{
-		switch (noise_function)
-		{
-			case 0:
-				//Iterate over all the points and apply a noise to the given attribute
-				applyNoise< ccnoise::value<float> >(attr, t);
-				break;
-			case 1:
-				applyNoise< ccnoise::gradient<float> >(attr, t);
-				break;
-			default:
-				break;
-		}
+		case 0: //value noise
+			//Iterate over all the points and apply a noise to the given attribute
+			applyNoiseFunction< ccnoise::value<float> >(t);
+			break;
+		case 1: //gradient noise
+			applyNoiseFunction< ccnoise::gradient<float> >(t);
+			break;
+		default:
+			break;
 	}
 
+	if ( evalInt(PrmComputeNormals.name.c_str(), 0, t) )
+		gdp->normal(); //recompute point normals
 
 	boss->opEnd();
 
@@ -196,8 +309,8 @@ OP_ERROR SOP_CCNoise::cookMySop(OP_Context &context)
 
 /****************************************************************************************************/
 
-template<class NoiseT>
-void SOP_CCNoise::applyNoise(GEO_AttributeHandle& attr, fpreal time)
+template<class NoiseT, class ApplyT, bool UseAuxAttr>
+void SOP_CCNoise::applyNoise(GEO_AttributeHandle& attr, GEO_AttributeHandle& attr_aux, fpreal time)
 {
 	UT_Vector3 freq;
 	UT_Vector3 offs;
@@ -208,6 +321,7 @@ void SOP_CCNoise::applyNoise(GEO_AttributeHandle& attr, fpreal time)
 	evalVectorProperty(PrmOffset.name.c_str(), time, &offs[0], PrmOffset.elements);
 	amp = evalFloat(PrmAmplitude.name.c_str(), 0, time);	
 
+	//NOTE: The noise initialisation should be moved to the node constructor
 	NoiseT noise;
 	noise.init();
 
@@ -217,16 +331,24 @@ void SOP_CCNoise::applyNoise(GEO_AttributeHandle& attr, fpreal time)
 
 	for (ppt = ptlist.head(); ppt; ppt = ptlist.next(ppt))
 	{
+		//Currently, we always treat the Position as the source for the noise
 		UT_Vector4& pos = ppt->getPos(); // noise input
 		
-		attr.setElement(ppt);
 		//Apply noise to color, based on position
 		noise.get(f, pos[0] * freq[0] + offs[0], pos[1] * freq[1] + offs[1], pos[2] * freq[2] + offs[2]);
 		f *= amp;
-		attr.setV3(UT_Vector3(f,f,f));
+		
+		attr.setElement(ppt);
+		if (UseAuxAttr)
+		{
+			attr_aux.setElement(ppt);
+		}
+
+		applyNoiseToResult<ApplyT>(pos, attr, attr_aux, f);
 	}
 }
 
 /****************************************************************************************************/
 
+} // ns cchdk
 
