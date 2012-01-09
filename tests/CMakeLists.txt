@@ -17,8 +17,13 @@ target_link_libraries(test_floor ${CPPUNIT_LIBRARIES})
 add_executable(test_smoothstep test_smoothstep.cpp )
 target_link_libraries(test_smoothstep ${CPPUNIT_LIBRARIES})
 
-add_executable(test_vector test_vector.cpp Vector3.cpp Matrix33.cpp)
-target_link_libraries(test_vector ${CPPUNIT_LIBRARIES})
+#This file is just for testing preprocessor expansion
+# e.g. g++ -P -E -CC test_preprocessor.cpp
+#add_executable(test_preprocessor test_preprocessor.cpp )
+#target_link_libraries(test_preprocessor ${CPPUNIT_LIBRARIES})
+
+#add_executable(test_vector test_vector.cpp Vector3.cpp Matrix33.cpp)
+#target_link_libraries(test_vector ${CPPUNIT_LIBRARIES})
 
 #install( TARGETS test_vnoise DESTINATION bin/test_vnoise )
 #install( TARGETS test_spline DESTINATION bin/test_spline )

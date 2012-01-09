@@ -57,9 +57,18 @@ void newSopOperator(OP_OperatorTable *table)
 static Parm<1, Defaults1> PrmNoiseDimension(PRM_ORD, "dim", "Noise Dimension", MakeDefaults(1.f));
 static Parm<3, Defaults3> PrmFrequency(PRM_XYZ, "freq", "Frequency", MakeDefaults(1.f, 1.f, 1.f));
 static Parm<3, Defaults3> PrmOffset(PRM_XYZ, "offs", "Offset", MakeDefaults(0.f, 0.f, 0.f));
-static Parm<1, Defaults1, Range> PrmAmplitude(PRM_FLT, "amp", "Amplitude", MakeDefaults(0.f), Range(0.f, 10.f));
+static Parm<1, Defaults1, NoMenu, Range> PrmAmplitude(PRM_FLT, "amp", "Amplitude", MakeDefaults(1.f), NoMenu(), Range(0.f, 10.f));
+
+static Menu3 noisetypes_menu = MakeMenu("value", "Value", "gradient", "Gradient (Perlin)", "vgradient", "Value-Gradient");
+static Parm<1, Defaults1, Menu3> PrmNoise(PRM_ORD, "noise", "Noise", MakeDefaults(1), noisetypes_menu);
+
+static Menu4 attributes_menu = MakeMenu("position", "Position", "color", "Color", "normals", "Normals", "velocity", "Velocity");
+static Parm<1, Defaults1, Menu4> PrmAttributes(PRM_ORD, "applyto", "Apply To", MakeDefaults(0), attributes_menu);
+
 
 PRM_Template SOP_CCNoise::myTemplateList[] = {
+		PrmNoise.get(),
+		PrmAttributes.get(),
 		PrmNoiseDimension.get(),
 		PrmFrequency.get(),
 		PrmOffset.get(),
@@ -147,7 +156,7 @@ OP_ERROR SOP_CCNoise::cookMySop(OP_Context &context)
 
 	GEO_AttributeHandle attr;
 
-	int dim = evalInt(PrmNoiseDimension.name.c_str(), 0, t);	
+	int noise_function = evalInt(PrmNoise.name.c_str(), 0, t);	
 
 	attr = gdp->getPointAttribute("Cd");
 
@@ -161,14 +170,14 @@ OP_ERROR SOP_CCNoise::cookMySop(OP_Context &context)
 
 	if (attr.isAttributeValid())
 	{
-		switch (dim)
+		switch (noise_function)
 		{
 			case 0:
 				//Iterate over all the points and apply a noise to the given attribute
-				applyNoise< ccnoise::gradient<float> >(attr, t);
+				applyNoise< ccnoise::value<float> >(attr, t);
 				break;
 			case 1:
-				applyNoise< ccnoise::value<float> >(attr, t);
+				applyNoise< ccnoise::gradient<float> >(attr, t);
 				break;
 			default:
 				break;
