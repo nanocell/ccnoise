@@ -3,6 +3,17 @@
 find_package( Boost 1.46 REQUIRED COMPONENTS random )
 find_package( CppUnit REQUIRED )
 
+message(STATUS "Boost found: ${Boost_FOUND}")
+
+if (!Boost_FOUND)
+	message(FATAL_ERROR "Could not find boost!")
+endif(!Boost_FOUND)
+
+message(STATUS "Boost includes: ${Boost_INCLUDE_DIRS}")
+message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
+
+include_directories(${Boost_INCLUDE_DIRS} ${CppUnit_INCLUDE_DIRS})
+
 add_executable(test_vnoise test_vnoise.cpp )
 
 add_executable(test_spline test_spline.cpp )
