@@ -38,7 +38,7 @@ namespace cchdk
 			/// This function is used to lookup local variables that you have
 			/// defined specific to your SOP.
 			//
-			fpreal getVariableValue(int index, int thread);
+			float getVariableValue(int index, int thread);
 			//virtual bool evalVariableValue(fpreal &val, int index, int thread);
 
 			// Add virtual overload that delegates to the super class to avoid

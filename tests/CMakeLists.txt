@@ -1,9 +1,10 @@
 
 
-find_package( Boost 1.46 REQUIRED COMPONENTS random )
+find_package( Boost 1.47 REQUIRED COMPONENTS date_time )
 find_package( CppUnit REQUIRED )
 
-add_executable(test_vnoise test_vnoise.cpp )
+add_executable(test_noise test_vnoise.cpp )
+target_link_libraries(test_noise ${BOOST_LIBRARIES})
 
 add_executable(test_spline test_spline.cpp )
 target_link_libraries(test_spline ${CPPUNIT_LIBRARIES})

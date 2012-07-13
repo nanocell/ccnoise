@@ -8,6 +8,7 @@
 #include <OpenEXR/ImathMatrix.h>
 #include <iostream>
 #include <ccmath/clamp.h>
+#include <ccmath/floor.h>
 #include <vector>
 
 namespace ccmath
@@ -81,7 +82,7 @@ namespace ccmath
 		typedef knotValueType knot_value_t;
 
 		knotItType knotIt = knotIterator;
-		sampleT v;
+		sampleT v, w;
 
 		size_t span;
 		size_t nspans = numKnots - 3;
@@ -97,8 +98,9 @@ namespace ccmath
 		v = x;
 		clamp(v, 0.f, 1.f);
 		v = v * nspans;
-	
-		span = static_cast<size_t>( floor(v) );
+
+		ccmath::floor(w,v);
+		span = static_cast<size_t>( w );
 
 		if (span > numKnots - 4)
 			span = numKnots - 4;
@@ -122,18 +124,74 @@ namespace ccmath
 		Imath::Vec4<knot_value_t> r = k * m;
 
 		//Evaluate the cubic polynomial.
-		//result = r[0] + v*(r[1] + v*(r[2] + v*r[3]));
-		result = 0.f;
-		result =((r[2] + v*r[3])*v + r[1])*v + r[0];
+		result = r[0] + v*(r[1] + v*(r[2] + v*r[3]));
+		//result = ((r[2] + v*r[3])*v + r[1])*v + r[0];
+	}
+	
+	/****************************************************************************************************/
+
+	template<typename sampleT, typename knotValueType, typename knotItType>
+	//void spline1(typename knotT::value_type& result, const sampleT& x, knotIt knots, size_t numKnots)
+	void spline2(knotValueType& result, const sampleT& x, knotItType knotIterator, size_t numKnots)
+	{
+		//sampleT must a floating point value
+		BOOST_STATIC_ASSERT(( boost::is_floating_point<sampleT>::value ));
+
+		typedef knotValueType knot_value_t;
+
+		knotItType knotIt = knotIterator;
+		sampleT v,w;
+
+		size_t span;
+		size_t nspans = numKnots - 3;
+
+		if (numKnots < 4) // illegal
+		{
+			//TODO: throw exception
+			std::cerr << "Spline doesn't have enough knots. " << std::endl;
+			return;
+		}
+		
+		//Find the appropriate 4-point span of the spline
+		v = x;
+		clamp(v, 0.f, 1.f);
+		v = v * nspans;
+
+		ccmath::floor(w,v);
+		span = static_cast<size_t>( w );
+
+		if (span > numKnots - 4)
+			span = numKnots - 4;
+
+		if (nspans > 1)
+		{
+			//We don't need to adjust these values if we only have one span.
+			v -= span;
+			knotIt += span; // advance the iterator to the correct span
+		}
+
+		const knot_value_t& k0 = *knotIt; ++knotIt;
+		const knot_value_t& k1 = *knotIt; ++knotIt;
+		const knot_value_t& k2 = *knotIt; ++knotIt;
+		const knot_value_t& k3 = *knotIt; 
+
+		Imath::Vec4<knot_value_t> k(k0, k1, k2, k3);
+		const typename spline_basis<float, true>::matrix_type& m = spline_basis<float, false>::coeff;
+
+		//Calculate the coefficients of the cubic polynomial
+		Imath::Vec4<knot_value_t> r = k * m;
+
+		//Evaluate the cubic polynomial.
+		result = r[0] + v*(r[1] + v*(r[2] + v*r[3]));
 	}
 
 	/****************************************************************************************************/
 
-	//Input: result reference, spline sample, *container* with knots
+	//Input: result reference, spline sample, structure with indexable knots (operator[] overload)
 	template<typename sampleT, typename knotT>
 	inline void spline(typename knotT::value_type& result, const sampleT& x, const knotT& knots)
 	{
-		spline1<sampleT, typename knotT::value_type, typename knotT::const_iterator>(result, x, knots.begin(), knots.size() );
+		spline2<sampleT, typename knotT::value_type, typename knotT::const_iterator>(result, x, knots.begin(), knots.size() );
 	}
 	
 	/****************************************************************************************************/

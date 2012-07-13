@@ -18,7 +18,14 @@
 namespace ccnoise
 {
 
-	template<typename T>
+	/*
+	 * Gradient noise class
+	 * T - base type to operate on. Typically float.
+	 * dim - Maximum number of dimensions of input values (typically 4)
+	 */
+
+
+	template<typename T, int dim>
 	class gradient
 	{
 		public:
@@ -29,9 +36,9 @@ namespace ccnoise
 			void init();
 
 			//Generate 1D noise value from 3D input
-			void get(T& r, T x, T y, T z);
+			//void get(T& r, T x, T y, T z);
 			//Generate 1D noise value from 1D input.
-			void get(T& r, T x);
+			//void get(T& r, T x);
 
 			/* Populate a table containing pseudo random values.
 			 * The generation of this table may differ depending on the noise algorithm.
@@ -43,15 +50,36 @@ namespace ccnoise
 	
 			//TODO: Implement getPermutedIndex as recursive template function (templated on dimension)
 			// e.g. getPermutedIndex<4>(ix, iy, iz, it);
+	
+			// #define CALL_PERM(z,n,unused) 
+
+			/*
+				//#define MAKE_getPermutedIndex(z,n,unused) \
+				//	unsigned int getPermutedIndex(BOOST_PP_ENUM(n, i, ~))\
+				//	{ \
+				//		return 0; \
+				//	}
+				//#endif
+			*/
+			
+
+			unsigned int getPermutedIndex(int ix, int iy, int iz, int iw) { return perm( ix + perm(iy + perm(iz + perm(iw))) ); }
 			unsigned int getPermutedIndex(int ix, int iy, int iz) { return perm( ix + perm(iy + perm(iz)) ); }
+			unsigned int getPermutedIndex(int ix, int iy) { return perm( ix + perm(iy) ); }
 			unsigned int getPermutedIndex(int ix) { return perm( ix ); }
 			
-			unsigned int perm(int i) { return _permtable[ ccmath::abs(i % _tablesize) ]; }
+			unsigned int perm(unsigned int i) { return _permtable[ i % _tablesize ]; }
 
 			//Get the PRN on the lattice associated with the integer lattice coords
 			T getPrn(int ix, int iy, int iz, float fx, float fy, float fz) 
 			{
 				T* t = &_prntable[ getPermutedIndex(ix,iy,iz)*3 ];
+				return t[0]*fx + t[1]*fy + t[2]*fz;
+			}
+			
+			T getPrn(int ix, int iy, int iz, int iw, float fx, float fy, float fz, float fw) 
+			{
+				T* t = &_prntable[ getPermutedIndex(ix,iy,iz,iw)*3 ];
 				return t[0]*fx + t[1]*fy + t[2]*fz;
 			}
 
@@ -73,8 +101,8 @@ namespace ccnoise
 
 	/****************************************************************************************************/
 
-	template <typename T> template<typename IteratorT>
-	void gradient<T>::populate_prn_table(IteratorT it_begin, IteratorT it_end)
+	template <typename T, int dim> template<typename IteratorT>
+	void gradient<T, dim>::populate_prn_table(IteratorT it_begin, IteratorT it_end)
 	{
 		//Perform a random shuffle, using the mersenne twister and random number generator
 		boost::mt19937 gen; // generate raw random numbers
@@ -98,8 +126,8 @@ namespace ccnoise
 	//************************************************************************************************
 
 
-	template<typename T>
-	gradient<T>::gradient(unsigned int tablesize)
+	template<typename T, int dim>
+	gradient<T, dim>::gradient(unsigned int tablesize)
 		: _tablesize(tablesize)
 	{
 
@@ -107,24 +135,24 @@ namespace ccnoise
 
 	/****************************************************************************************************/
 
-	template<typename T>
-	gradient<T>::gradient()
+	template<typename T, int dim>
+	gradient<T, dim>::gradient()
 	{
 		_tablesize = 256;
 	}
 
 	/****************************************************************************************************/
 
-	template<typename T>
-	gradient<T>::~gradient()
+	template<typename T, int dim>
+	gradient<T, dim>::~gradient()
 	{
 
 	}
 
 	/****************************************************************************************************/
 	
-	template<typename T>
-	void gradient<T>::init()
+	template<typename T, int dim>
+	void gradient<T, dim>::init()
 	{
 		init_permutation_table();
 		init_prn_table();
@@ -132,69 +160,69 @@ namespace ccnoise
 
 	/****************************************************************************************************/
 
-	template<typename T>
-	void gradient<T>::get(T& r, T x, T y, T z)
-	{
+//	template<typename T>
+//	void gradient<T, 4>::get(T& r, T x, T y, T z)
+//	{
+//
+//		Imath::Vec3<T> v(x,y,z);
+//		Imath::Vec3<T> vi;
+//		Imath::Vec3<T> f0,f1;
+//		Imath::Vec3<T> w;
+//
+//		ccmath::floor(vi, v);
+//		f0 = v-vi; //fractions vector
+//		f1 = f0 - Imath::Vec3<T>(1, 1, 1);
+//		ccmath::smoothstep(w, f0);
+//
+//		Imath::Vec3<T> v0, v1;
+//
+//		v0.x = getPrn(vi.x,   vi.y, vi.z, f0.x, f0.y, f0.z);
+//		v1.x = getPrn(vi.x+1, vi.y, vi.z, f1.x, f0.y, f0.z);
+//		ccmath::lerp(v0.y, w.x, v0.x, v1.x);
+//
+//		v0.x = getPrn(vi.x,  vi.y+1, vi.z, f0.x, f1.y, f0.z);
+//		v1.x = getPrn(vi.x+1, vi.y+1, vi.z, f1.x, f1.y, f0.z);
+//		ccmath::lerp(v1.y, w.x, v0.x, v1.x);
+//		ccmath::lerp(v0.z, w.y, v0.y, v1.y);
+//
+//		v0.x = getPrn(vi.x,   vi.y, vi.z+1, f0.x, f0.y, f1.z);
+//		v1.x = getPrn(vi.x+1, vi.y, vi.z+1, f1.x, f0.y, f1.z);
+//		ccmath::lerp(v0.y, w.x, v0.x, v1.x);
+//
+//		v0.x = getPrn(vi.x,   vi.y+1, vi.z+1, f0.x, f1.y, f1.z);
+//		v1.x = getPrn(vi.x+1, vi.y+1, vi.z+1, f1.x, f1.y, f1.z);
+//		ccmath::lerp(v1.y, w.x, v0.x, v1.x);
+//		ccmath::lerp(v1.z, w.y, v0.y, v1.y);
+//
+//		ccmath::lerp(r, w.z, v0.z, v1.z);	
+//	}
+//	
+//	/****************************************************************************************************/
+//
+//	template<typename T>
+//	void gradient<T, 1>::get(T& r, T x)
+//	{
+//		int ix;
+//		int i;
+//		T fx;
+//		T xknots[4];
+//
+//		//simple cubic catmull rom spline interpolation implementation
+//
+//		ix = floor(x);
+//		fx = x - ix;
+//
+//		for (i = 0; i < 4; ++i)
+//		{
+//			xknots[i] = getPrn(ix+i-1);
+//		}
+//		ccmath::spline(r, fx, xknots, 4);
+//	}
 
-		Imath::Vec3<T> v(x,y,z);
-		Imath::Vec3<T> vi;
-		Imath::Vec3<T> f0,f1;
-		Imath::Vec3<T> w;
-
-		ccmath::floor(vi, v);
-		f0 = v-vi; //fractions vector
-		f1 = f0 - Imath::Vec3<T>(1, 1, 1);
-		ccmath::smoothstep(w, f0);
-
-		Imath::Vec3<T> v0, v1;
-
-		v0.x = getPrn(vi.x,   vi.y, vi.z, f0.x, f0.y, f0.z);
-		v1.x = getPrn(vi.x+1, vi.y, vi.z, f1.x, f0.y, f0.z);
-		ccmath::lerp(v0.y, w.x, v0.x, v1.x);
-
-		v0.x = getPrn(vi.x,  vi.y+1, vi.z, f0.x, f1.y, f0.z);
-		v1.x = getPrn(vi.x+1, vi.y+1, vi.z, f1.x, f1.y, f0.z);
-		ccmath::lerp(v1.y, w.x, v0.x, v1.x);
-		ccmath::lerp(v0.z, w.y, v0.y, v1.y);
-
-		v0.x = getPrn(vi.x,   vi.y, vi.z+1, f0.x, f0.y, f1.z);
-		v1.x = getPrn(vi.x+1, vi.y, vi.z+1, f1.x, f0.y, f1.z);
-		ccmath::lerp(v0.y, w.x, v0.x, v1.x);
-
-		v0.x = getPrn(vi.x,   vi.y+1, vi.z+1, f0.x, f1.y, f1.z);
-		v1.x = getPrn(vi.x+1, vi.y+1, vi.z+1, f1.x, f1.y, f1.z);
-		ccmath::lerp(v1.y, w.x, v0.x, v1.x);
-		ccmath::lerp(v1.z, w.y, v0.y, v1.y);
-
-		ccmath::lerp(r, w.z, v0.z, v1.z);	
-	}
-	
 	/****************************************************************************************************/
 
-	template<typename T>
-	void gradient<T>::get(T& r, T x)
-	{
-		int ix;
-		int i;
-		T fx;
-		T xknots[4];
-
-		//simple cubic catmull rom spline interpolation implementation
-
-		ix = floor(x);
-		fx = x - ix;
-
-		for (i = 0; i < 4; ++i)
-		{
-			xknots[i] = getPrn(ix+i-1);
-		}
-		ccmath::spline(r, fx, xknots, 4);
-	}
-
-	/****************************************************************************************************/
-
-	template<typename T>
-	void gradient<T>::init_permutation_table() 
+	template<typename T, int dim>
+	void gradient<T, dim>::init_permutation_table() 
 	{
 		_permtable.resize(_tablesize);
 
@@ -216,8 +244,8 @@ namespace ccnoise
 
 	//************************************************************************************************
 
-	template<typename T>
-	void gradient<T>::init_prn_table() 
+	template<typename T, int dim>
+	void gradient<T, dim>::init_prn_table() 
 	{
 		_prntable.resize(_tablesize * 3);
 
